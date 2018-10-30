@@ -532,8 +532,9 @@ procdump(void)
     cprintf("\n");
   }
 }
-// added
-int cps()
+// added cpu states
+int 
+cps()
 {
   struct proc *p;
   sti();
@@ -547,4 +548,22 @@ int cps()
     else if(p->state == RUNNABLE)
       cprintf("%s \t %d \t RUNNABLE \t %d\n",p->name, p->pid, p->priority);
   }
+    release(&ptable.lock); 
+    return 22;
+}
+
+//added change priority
+int 
+chpr(int pid, int priority)
+{
+  struct proc *p;
+  acquire(&ptable.lock); 
+  for(p = ptable.proc; p<&ptable.proc[NPROC]; p++){
+    if(p->pid == pid){
+      p->priority = priority;
+      break;
+    }      
+  }
+  release(&ptable.lock); 
+  return pid;
 }
