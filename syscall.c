@@ -103,6 +103,7 @@ extern int sys_unlink(void);
 extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
+extern int sys_waitpid(void);
 extern int sys_cps(void);
 extern int sys_chpr(void);
 
@@ -130,6 +131,7 @@ static int (*syscalls[])(void) = {
 [SYS_close]   sys_close,
 [SYS_cps]     sys_cps,
 [SYS_chpr]    sys_chpr,
+[SYS_waitpid] sys_waitpid, 
 };
 
 void
