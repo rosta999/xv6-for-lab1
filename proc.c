@@ -225,11 +225,12 @@ fork(void)
 // An exited process remains in the zombie state
 // until its parent calls wait() to find out it exited.
 void
-exit(void)
+exit(int status)
 {
   struct proc *curproc = myproc();
   struct proc *p;
   int fd;
+  curproc->exitstatus = status;
 
   if(curproc == initproc)
     panic("init exiting");
@@ -270,7 +271,7 @@ exit(void)
 // Wait for a child process to exit and return its pid.
 // Return -1 if this process has no children.
 int
-wait(void)
+wait(int *status)
 {
   struct proc *p;
   int havekids, pid;
@@ -311,6 +312,52 @@ wait(void)
   }
 }
 
+int
+waitpid(int pid, int *status, int option)
+{
+  struct proc *p;
+  int found = 0;
+
+  acquire(&ptable.lock);
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+    if(p->pid != pid)
+      continue;
+    else {
+      found = 1;
+      break;
+    }
+  }
+  if (!found) {
+    release(&ptable.lock);
+    if (status)
+      *status = -1;
+    return -1;
+  } else {
+    for (;;) {
+      if(p->state == ZOMBIE) {
+        kfree(p->kstack);
+        p->kstack = 0;
+        if (!p->isthread)
+          freevm(p->pgdir);
+        p->state = UNUSED;
+        p->pid = 0;
+        p->parent = 0;
+        p->name[0] = 0;
+        p->killed = 0;
+        if (status)
+          *status = p->exitstatus;
+        release(&ptable.lock);
+        return(pid);
+      } else if (p->state == UNUSED) {
+        if (status)
+          *status = p->exitstatus;
+        release(&ptable.lock);
+        return(pid);
+	  }
+      sleep(p, &ptable.lock);
+    }
+  }
+}
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
